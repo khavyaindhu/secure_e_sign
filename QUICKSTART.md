@@ -693,30 +693,6 @@ Cryptographic signature persistence
 Data retrieval after session restart
 
 
-Scenario 6: Multi-User Verification (Tests PKI)
-Steps:
-
-Login as User A
-Upload and sign a document
-Logout
-Login as User B (or create new account)
-Go to "Verify Document" tab
-Upload the document signed by User A
-
-What to Check:
-
-✅ Verification succeeds
-✅ Shows "Signed By: [User A's name]"
-✅ Shows User A's email
-✅ Public key fingerprint matches User A's certificate
-
-What This Tests:
-
-Cross-user verification
-Public key infrastructure (PKI) working
-Signatures verifiable by anyone with access to public key
-
-
 🚨 Error Scenarios to Test
 Test 1: Upload Invalid File Type
 
