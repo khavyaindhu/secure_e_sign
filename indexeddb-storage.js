@@ -80,12 +80,71 @@ class DocumentStorage {
 
     async deleteDocument(docId) {
         await this.init();
+        return new Promise(async (resolve, reject) => {
+            try {
+                const transaction = this.db.transaction([this.storeName], 'readwrite');
+                const store = transaction.objectStore(this.storeName);
+                
+                // First check if document exists
+                const getRequest = store.get(docId);
+                
+                getRequest.onsuccess = () => {
+                    const doc = getRequest.result;
+                    
+                    if (!doc) {
+                        console.log('Document not found:', docId);
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Document exists, now delete it
+                    const deleteRequest = store.delete(docId);
+                    
+                    deleteRequest.onsuccess = () => {
+                        console.log('Document deleted successfully from IndexedDB:', docId);
+                        resolve(true);
+                    };
+                    
+                    deleteRequest.onerror = () => {
+                        console.error('Error deleting document:', deleteRequest.error);
+                        reject(deleteRequest.error);
+                    };
+                };
+                
+                getRequest.onerror = () => {
+                    console.error('Error checking document:', getRequest.error);
+                    reject(getRequest.error);
+                };
+                
+            } catch (error) {
+                console.error('Error in deleteDocument:', error);
+                reject(error);
+            }
+        });
+    }
+
+    async deleteAllUserDocuments(userEmail) {
+        await this.init();
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
-            const request = store.delete(docId);
+            const index = store.index('userEmail');
+            const request = index.openCursor(IDBKeyRange.only(userEmail));
             
-            request.onsuccess = () => resolve();
+            let deletedCount = 0;
+            
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    cursor.delete();
+                    deletedCount++;
+                    cursor.continue();
+                } else {
+                    console.log(`Deleted ${deletedCount} documents for user:`, userEmail);
+                    resolve(deletedCount);
+                }
+            };
+            
             request.onerror = () => reject(request.error);
         });
     }

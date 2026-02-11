@@ -322,36 +322,6 @@ function loadUserDocuments(userDetails) {
     console.log('All document cards appended. Total children:', documentsGrid.children.length);
 }
 
-// function loadUserDocuments(userDetails) {
-//     const documentsGrid = document.querySelector('#documentsTab .documents-grid');
-//     if (!documentsGrid) return;
-
-//     // Clear existing documents
-//     documentsGrid.innerHTML = '';
-
-//     console.log('Loading documents for user:', currentUser.email);
-//     console.log('User details:', userDetails);
-//     console.log('Documents array:', userDetails.documents);
-
-//     if (!userDetails.documents || userDetails.documents.length === 0) {
-//         documentsGrid.innerHTML = `
-//             <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6B7280;">
-//                 <svg style="width: 64px; height: 64px; margin: 0 auto 16px; opacity: 0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-//                     <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-//                 </svg>
-//                 <h3 style="margin: 16px 0 8px; font-size: 18px; color: #374151;">No documents yet</h3>
-//                 <p style="margin: 0; font-size: 14px;">Upload and sign your first document to get started!</p>
-//             </div>
-//         `;
-//         return;
-//     }
-
-//     // Display user's documents
-//     userDetails.documents.forEach(doc => {
-//         const docCard = createDocumentCard(doc);
-//         documentsGrid.appendChild(docCard);
-//     });
-// }
 
 function createDocumentCard(doc) {
     const card = document.createElement('div');
@@ -359,6 +329,9 @@ function createDocumentCard(doc) {
     
     const statusClass = doc.signed ? 'signed' : 'pending';
     const statusText = doc.signed ? 'Signed' : 'Pending Signature';
+    
+    // Store doc.id in a data attribute to avoid quote escaping issues
+    card.setAttribute('data-doc-id', doc.id);
     
     card.innerHTML = `
         <div class="doc-icon">
@@ -375,12 +348,38 @@ function createDocumentCard(doc) {
         </div>
         <div class="doc-actions">
             ${doc.signed ? 
-                '<button class="btn btn-sm" onclick="downloadDocument(\'' + doc.id + '\')">Download</button>' :
-                '<button class="btn btn-sm btn-primary" onclick="signDocumentFromList(\'' + doc.id + '\')">Sign Now</button>'
+                '<button class="btn btn-sm btn-download">Download</button>' :
+                '<button class="btn btn-sm btn-primary btn-sign">Sign Now</button>'
             }
-            <button class="btn btn-sm btn-secondary" onclick="viewDocumentDetails(\'' + doc.id + '\')">Details</button>
+            <button class="btn btn-sm btn-secondary btn-details">Details</button>
+            <button class="btn btn-sm btn-danger btn-delete">Delete</button>
         </div>
     `;
+    
+    // Add event listeners instead of inline onclick
+    const docId = doc.id;
+    
+    if (doc.signed) {
+        const downloadBtn = card.querySelector('.btn-download');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', () => downloadDocument(docId));
+        }
+    } else {
+        const signBtn = card.querySelector('.btn-sign');
+        if (signBtn) {
+            signBtn.addEventListener('click', () => signDocumentFromList(docId));
+        }
+    }
+    
+    const detailsBtn = card.querySelector('.btn-details');
+    if (detailsBtn) {
+        detailsBtn.addEventListener('click', () => viewDocumentDetails(docId));
+    }
+    
+    const deleteBtn = card.querySelector('.btn-delete');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => deleteDocument(docId));
+    }
     
     return card;
 }
@@ -746,6 +745,40 @@ async function downloadDocument(docId) {
     } catch (error) {
         console.error('Error downloading document:', error);
         showNotification('Error downloading document', 'error');
+    }
+}
+
+async function deleteDocument(docId) {
+    // Show confirmation dialog
+    if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        showNotification('Deleting document...', 'info');
+        
+        // Delete from IndexedDB
+        const deleted = await documentStorage.deleteDocument(docId);
+        
+        if (deleted) {
+            // Log audit event
+            authManager.logAuditEvent(
+                'DOCUMENT_DELETED',
+                currentUser.email,
+                `Deleted document: ${docId}`
+            );
+            
+            showNotification('Document deleted successfully!', 'success');
+            
+            // Reload documents to refresh the view
+            await loadUserData();
+        } else {
+            showNotification('Document not found', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        showNotification('Error deleting document: ' + error.message, 'error');
     }
 }
 
