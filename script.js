@@ -593,25 +593,35 @@ async function handleSignDocument() {
         return;
     }
 
-    showNotification('Hashing document...', 'info');
-    
+    // Helper function to wait
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     try {
-        // STEP 1: Generate document hash
+        // STEP 1: Show hashing notification and wait
+        showNotification('Hashing document...', 'info');
+        await wait(1500); // Wait 1.5 seconds so user can see it
+        
         const documentHash = await cryptoUtils.hashDocument(currentFileData);
         console.log('Document hash generated:', documentHash);
         
+        // STEP 2: Show signing notification and wait
         showNotification('Signing document with your private key...', 'info');
+        await wait(1500); // Wait 1.5 seconds
         
-        // STEP 2: Get user's private key
+        // Get user's private key
         const userDetails = authManager.getUserDetails(currentUser.email);
         if (!userDetails.keys || !userDetails.keys.privateKey) {
             showNotification('Error: User keys not found. Please contact administrator.', 'error');
             return;
         }
         
-        // STEP 3: Sign the document hash
+        // Sign the document hash
         const signature = await cryptoUtils.signHash(documentHash, userDetails.keys.privateKey);
         console.log('Document signed successfully');
+        
+        // STEP 3: Show success notification
+        showNotification('Document signed successfully with cryptographic signature!', 'success');
+        await wait(1000); // Brief pause before continuing
         
         // STEP 4: Create signed document with cryptographic proof
         const signedDocument = {
@@ -650,8 +660,6 @@ async function handleSignDocument() {
             currentUser.email,
             `Cryptographically signed document: ${currentFile.name} (Hash: ${documentHash.substring(0, 16)}...)`
         );
-
-        showNotification('Document signed successfully with cryptographic signature!', 'success');
         
         // Reset upload area
         document.getElementById('uploadArea').style.display = 'block';
