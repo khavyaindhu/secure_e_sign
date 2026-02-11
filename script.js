@@ -203,6 +203,7 @@ function handleLogin(e) {
     }
 }
 
+
 function handleRegister(e) {
     e.preventDefault();
 
@@ -223,22 +224,29 @@ function handleRegister(e) {
         return;
     }
 
-    const result = authManager.register(email, password, fullName, organization);
-
-    if (result.success) {
-        showNotification(result.message, 'success');
-        document.getElementById('registerForm').reset();
-        
-        // Automatically switch to login screen after 1.5 seconds
-        setTimeout(() => {
-            showScreen('loginScreen');
-            // Pre-fill email for convenience
-            document.getElementById('loginEmail').value = email;
-        }, 1500);
-    } else {
-        showNotification(result.message, 'error');
-    }
+    // IMPORTANT: Call register with .then() because it's async
+    authManager.register(email, password, fullName, organization)
+        .then(result => {
+            if (result.success) {
+                showNotification(result.message, 'success');
+                document.getElementById('registerForm').reset();
+                
+                // Automatically switch to login screen after 1.5 seconds
+                setTimeout(() => {
+                    showScreen('loginScreen');
+                    // Pre-fill email for convenience
+                    document.getElementById('loginEmail').value = email;
+                }, 1500);
+            } else {
+                showNotification(result.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Registration error:', error);
+            showNotification('Registration failed: ' + error.message, 'error');
+        });
 }
+
 
 function handleLogout() {
     const result = authManager.logout();
@@ -268,7 +276,6 @@ function loadUserCertificate(userDetails) {
     const certSection = document.querySelector('#certificateTab .certificate-card');
     
     if (certSection) {
-        // Update certificate information in the UI
         const infoRows = certSection.querySelectorAll('.info-row');
         if (infoRows.length >= 7) {
             infoRows[0].querySelector('span').textContent = `CN=${userDetails.name}, O=${userDetails.organization || 'N/A'}, C=US`;
@@ -280,6 +287,17 @@ function loadUserCertificate(userDetails) {
             const statusBadge = infoRows[6].querySelector('.status-badge');
             statusBadge.textContent = cert.status;
             statusBadge.className = `status-badge ${cert.status === 'Active' ? 'valid' : 'revoked'}`;
+        }
+        
+        // Update key information section
+        const keyInfoCard = document.querySelector('.key-info-card');
+        if (keyInfoCard && userDetails.keys) {
+            const keyInfoRows = keyInfoCard.querySelectorAll('.info-row');
+            if (keyInfoRows.length >= 3) {
+                // Update fingerprint with real value
+                keyInfoRows[1].querySelector('.hash-text').textContent = 
+                    userDetails.keys.fingerprint || 'Not available';
+            }
         }
     }
 }
@@ -575,87 +593,258 @@ async function handleSignDocument() {
         return;
     }
 
-    showNotification('Document signing in progress...', 'info');
+    showNotification('Hashing document...', 'info');
     
-    setTimeout(async () => {
-        try {
-            const newDocument = {
-                id: generateDocumentId(),
-                name: currentFile.name,
-                size: formatFileSize(currentFile.size),
-                type: currentFile.type,
-                fileData: currentFileData,
-                date: new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                }),
-                timestamp: new Date().toISOString(),
-                signed: true,
-                signatureReason: reason,
-                signatureLocation: location,
-                signedBy: currentUser.name,
-                signedEmail: currentUser.email
-            };
-
-            // Save to IndexedDB instead of localStorage
-            await documentStorage.saveDocument(currentUser.email, newDocument);
-
-            authManager.logAuditEvent(
-                'DOCUMENT_SIGNED',
-                currentUser.email,
-                `Signed document: ${currentFile.name}`
-            );
-
-            showNotification('Document signed successfully!', 'success');
-            
-            // Reset upload area
-            document.getElementById('uploadArea').style.display = 'block';
-            document.getElementById('filePreview').style.display = 'none';
-            document.getElementById('fileInput').value = '';
-            document.getElementById('signatureReason').value = '';
-            document.getElementById('signatureLocation').value = '';
-            currentFile = null;
-            currentFileData = null;
-            
-            // Reload user data
-            await loadUserData();
-            
-            // Switch to documents tab
-            const documentsTab = document.querySelector('[data-tab="documents"]');
-            if (documentsTab) {
-                switchTab(documentsTab, 'user');
-            }
-        } catch (error) {
-            console.error('Error in handleSignDocument:', error);
-            showNotification('Error signing document: ' + error.message, 'error');
+    try {
+        // STEP 1: Generate document hash
+        const documentHash = await cryptoUtils.hashDocument(currentFileData);
+        console.log('Document hash generated:', documentHash);
+        
+        showNotification('Signing document with your private key...', 'info');
+        
+        // STEP 2: Get user's private key
+        const userDetails = authManager.getUserDetails(currentUser.email);
+        if (!userDetails.keys || !userDetails.keys.privateKey) {
+            showNotification('Error: User keys not found. Please contact administrator.', 'error');
+            return;
         }
-    }, 2000);
+        
+        // STEP 3: Sign the document hash
+        const signature = await cryptoUtils.signHash(documentHash, userDetails.keys.privateKey);
+        console.log('Document signed successfully');
+        
+        // STEP 4: Create signed document with cryptographic proof
+        const signedDocument = {
+            id: generateDocumentId(),
+            name: currentFile.name,
+            size: formatFileSize(currentFile.size),
+            type: currentFile.type,
+            fileData: currentFileData,
+            date: new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            }),
+            timestamp: new Date().toISOString(),
+            signed: true,
+            signatureReason: reason,
+            signatureLocation: location,
+            signedBy: currentUser.name,
+            signedEmail: currentUser.email,
+            // Add cryptographic signature data
+            cryptoSignature: {
+                documentHash: documentHash,
+                signature: signature,
+                algorithm: 'RSASSA-PKCS1-v1_5',
+                hashAlgorithm: 'SHA-256',
+                publicKeyFingerprint: userDetails.keys.fingerprint,
+                signedAt: cryptoUtils.getTimestamp()
+            }
+        };
+
+        // Save to IndexedDB
+        await documentStorage.saveDocument(currentUser.email, signedDocument);
+
+        authManager.logAuditEvent(
+            'DOCUMENT_SIGNED',
+            currentUser.email,
+            `Cryptographically signed document: ${currentFile.name} (Hash: ${documentHash.substring(0, 16)}...)`
+        );
+
+        showNotification('Document signed successfully with cryptographic signature!', 'success');
+        
+        // Reset upload area
+        document.getElementById('uploadArea').style.display = 'block';
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('signatureReason').value = '';
+        document.getElementById('signatureLocation').value = '';
+        currentFile = null;
+        currentFileData = null;
+        
+        // Reload user data
+        await loadUserData();
+        
+        // Switch to documents tab
+        const documentsTab = document.querySelector('[data-tab="documents"]');
+        if (documentsTab) {
+            switchTab(documentsTab, 'user');
+        }
+        
+    } catch (error) {
+        console.error('Error in handleSignDocument:', error);
+        showNotification('Error signing document: ' + error.message, 'error');
+    }
 }
 
-function handleVerifyDocument(file) {
-    showNotification('Verifying document signature...', 'info');
+async function handleVerifyDocument(file) {
+    showNotification('Reading document...', 'info');
     
-    // Simulate verification
-    setTimeout(() => {
-        document.getElementById('verificationResult').style.display = 'block';
+    try {
+        // Read the uploaded file
+        const reader = new FileReader();
         
-        // Update verification details with current user info
-        const detailItems = document.querySelectorAll('#verificationResult .detail-item');
-        if (detailItems.length >= 2) {
-            detailItems[0].querySelector('span').textContent = `${currentUser.name} (${currentUser.email})`;
-            detailItems[1].querySelector('span').textContent = new Date().toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZoneName: 'short'
-            });
-        }
+        reader.onload = async function(e) {
+            const uploadedFileData = e.target.result;
+            
+            showNotification('Verifying cryptographic signature...', 'info');
+            
+            try {
+                // Search for this document in IndexedDB by matching file data
+                const allDocs = await documentStorage.getUserDocuments(currentUser.email);
+                
+                // Find matching document by comparing hashes
+                const uploadedHash = await cryptoUtils.hashDocument(uploadedFileData);
+                const matchingDoc = allDocs.find(doc => 
+                    doc.cryptoSignature && doc.cryptoSignature.documentHash === uploadedHash
+                );
+                
+                if (!matchingDoc) {
+                    // Document not found in database
+                    showVerificationResult(false, {
+                        error: 'Document not found in system or has been modified'
+                    });
+                    return;
+                }
+                
+                if (!matchingDoc.signed || !matchingDoc.cryptoSignature) {
+                    showVerificationResult(false, {
+                        error: 'Document has no cryptographic signature'
+                    });
+                    return;
+                }
+                
+                // Get signer's public key
+                const signerDetails = authManager.getUserDetails(matchingDoc.signedEmail);
+                if (!signerDetails || !signerDetails.keys) {
+                    showVerificationResult(false, {
+                        error: 'Signer public key not found'
+                    });
+                    return;
+                }
+                
+                // Verify the signature
+                const isValid = await cryptoUtils.verifySignature(
+                    matchingDoc.cryptoSignature.documentHash,
+                    matchingDoc.cryptoSignature.signature,
+                    signerDetails.keys.publicKey
+                );
+                
+                if (isValid) {
+                    showVerificationResult(true, {
+                        signedBy: matchingDoc.signedBy,
+                        signedEmail: matchingDoc.signedEmail,
+                        signedAt: matchingDoc.cryptoSignature.signedAt,
+                        documentHash: matchingDoc.cryptoSignature.documentHash,
+                        fingerprint: matchingDoc.cryptoSignature.publicKeyFingerprint,
+                        algorithm: matchingDoc.cryptoSignature.algorithm,
+                        reason: matchingDoc.signatureReason,
+                        location: matchingDoc.signatureLocation
+                    });
+                } else {
+                    showVerificationResult(false, {
+                        error: 'Signature verification failed - document may have been tampered with'
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Verification error:', error);
+                showVerificationResult(false, {
+                    error: 'Verification failed: ' + error.message
+                });
+            }
+        };
         
-        showNotification('Document verified successfully!', 'success');
-    }, 1500);
+        reader.onerror = function() {
+            showNotification('Error reading file', 'error');
+        };
+        
+        reader.readAsDataURL(file);
+        
+    } catch (error) {
+        console.error('Error in handleVerifyDocument:', error);
+        showNotification('Error: ' + error.message, 'error');
+    }
+}
+
+function showVerificationResult(isValid, data) {
+    const resultDiv = document.getElementById('verificationResult');
+    const resultCard = resultDiv.querySelector('.result-card');
+    
+    // Update result card class
+    resultCard.className = 'result-card ' + (isValid ? 'success' : 'error');
+    
+    // Update icon and title
+    const icon = resultCard.querySelector('.result-icon svg');
+    const title = resultCard.querySelector('h3');
+    const description = resultCard.querySelector('p');
+    
+    if (isValid) {
+        icon.innerHTML = '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+        title.textContent = 'Signature Valid ✓';
+        description.textContent = 'This document has a valid cryptographic signature';
+    } else {
+        icon.innerHTML = '<path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+        title.textContent = 'Signature Invalid ✗';
+        description.textContent = data.error || 'Signature verification failed';
+    }
+    
+    // Update details
+    const detailsDiv = resultCard.querySelector('.verification-details');
+    if (isValid) {
+        detailsDiv.innerHTML = `
+            <div class="detail-item">
+                <strong>Signed By:</strong>
+                <span>${data.signedBy} (${data.signedEmail})</span>
+            </div>
+            <div class="detail-item">
+                <strong>Signed On:</strong>
+                <span>${new Date(data.signedAt).toLocaleString()}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Signature Reason:</strong>
+                <span>${data.reason}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Signature Location:</strong>
+                <span>${data.location}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Document Hash (SHA-256):</strong>
+                <span class="hash-text">${data.documentHash.substring(0, 32)}...</span>
+            </div>
+            <div class="detail-item">
+                <strong>Signature Algorithm:</strong>
+                <span>${data.algorithm}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Public Key Fingerprint:</strong>
+                <span class="hash-text">${data.fingerprint.substring(0, 47)}...</span>
+            </div>
+            <div class="detail-item">
+                <strong>Document Integrity:</strong>
+                <span class="status-text success">✓ Not Modified</span>
+            </div>
+            <div class="detail-item">
+                <strong>Signature Status:</strong>
+                <span class="status-text success">✓ Cryptographically Valid</span>
+            </div>
+        `;
+    } else {
+        detailsDiv.innerHTML = `
+            <div class="detail-item">
+                <strong>Error:</strong>
+                <span class="status-text error">${data.error}</span>
+            </div>
+        `;
+    }
+    
+    resultDiv.style.display = 'block';
+    
+    showNotification(
+        isValid ? 'Document verified successfully!' : 'Signature verification failed',
+        isValid ? 'success' : 'error'
+    );
 }
 
 // ==========================================

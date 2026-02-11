@@ -1,5 +1,6 @@
 // ==========================================
 // LOCAL STORAGE AUTHENTICATION SYSTEM
+// Fixed version with better error handling
 // ==========================================
 
 class AuthManager {
@@ -17,7 +18,7 @@ class AuthManager {
         if (Object.keys(existingUsers).length === 0) {
             const defaultUsers = {
                 'admin@securesign.com': {
-                    password: 'admin123', // In production, this should be hashed
+                    password: 'admin123',
                     role: 'admin',
                     name: 'Administrator',
                     organization: 'SecureSign PKI',
@@ -28,7 +29,7 @@ class AuthManager {
                         expiry: 'December 31, 2026',
                         status: 'Active'
                     },
-                    documents: [] // Initialize empty documents array
+                    documents: []
                 },
                 'user@securesign.com': {
                     password: 'user123',
@@ -42,7 +43,7 @@ class AuthManager {
                         expiry: 'December 31, 2026',
                         status: 'Active'
                     },
-                    documents: [] // Initialize empty documents array
+                    documents: []
                 }
             };
             
@@ -55,7 +56,6 @@ class AuthManager {
         }
     }
 
-    // Get all users from localStorage
     getAllUsers() {
         try {
             const users = localStorage.getItem(this.USERS_KEY);
@@ -66,18 +66,14 @@ class AuthManager {
         }
     }
 
-    // Save users to localStorage with error handling
     saveUsers(users) {
         try {
             const jsonString = JSON.stringify(users);
-            
-            // Check approximate size (1 char ≈ 2 bytes in UTF-16)
             const sizeInBytes = jsonString.length * 2;
             const sizeInMB = sizeInBytes / (1024 * 1024);
             
             console.log('Attempting to save users. Size:', sizeInMB.toFixed(2), 'MB');
             
-            // localStorage limit is typically 5-10MB
             if (sizeInMB > 4.5) {
                 console.warn('Warning: Approaching localStorage size limit');
             }
@@ -97,8 +93,8 @@ class AuthManager {
         }
     }
 
-    // Register a new user
-    register(email, password, fullName, organization = '') {
+    // FIXED REGISTER METHOD with better error handling
+    async register(email, password, fullName, organization = '') {
         const users = this.getAllUsers();
 
         // Check if user already exists
@@ -130,48 +126,89 @@ class AuthManager {
         const serialNumber = this.generateSerialNumber();
         const currentDate = new Date();
         const expiryDate = new Date(currentDate);
-        expiryDate.setFullYear(expiryDate.getFullYear() + 2); // 2 year validity
+        expiryDate.setFullYear(expiryDate.getFullYear() + 2);
 
-        // Create new user
-        users[email] = {
-            password: password, // In production, hash this password
-            role: 'user',
-            name: fullName,
-            organization: organization,
-            registeredDate: currentDate.toISOString(),
-            certificate: {
-                serial: serialNumber,
-                issued: currentDate.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                }),
-                expiry: expiryDate.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                }),
-                status: 'Active'
-            },
-            documents: [] // Initialize empty documents array
-        };
-
-        const saved = this.saveUsers(users);
-        
-        if (!saved) {
+        // Check if cryptoUtils is available
+        if (typeof cryptoUtils === 'undefined') {
+            console.error('cryptoUtils is not defined! Make sure crypto-utils.js is loaded before auth.js');
             return {
                 success: false,
-                message: 'Registration failed - storage quota exceeded'
+                message: 'Registration failed - cryptographic module not loaded. Please refresh the page.'
             };
         }
 
-        return {
-            success: true,
-            message: 'Registration successful! Please login with your credentials.'
-        };
+        // Generate RSA key pair for the new user
+        try {
+            console.log('Starting key generation...');
+            const keyPair = await cryptoUtils.generateKeyPair(2048);
+            console.log('Key pair generated');
+            
+            const publicKeyPem = await cryptoUtils.exportPublicKey(keyPair.publicKey);
+            console.log('Public key exported');
+            
+            const privateKeyPem = await cryptoUtils.exportPrivateKey(keyPair.privateKey);
+            console.log('Private key exported');
+            
+            const fingerprint = await cryptoUtils.generateKeyFingerprint(publicKeyPem);
+            console.log('Fingerprint generated:', fingerprint.substring(0, 20) + '...');
+
+            // Create new user with keys
+            users[email] = {
+                password: password,
+                role: 'user',
+                name: fullName,
+                organization: organization,
+                registeredDate: currentDate.toISOString(),
+                keys: {
+                    publicKey: publicKeyPem,
+                    privateKey: privateKeyPem,
+                    fingerprint: fingerprint,
+                    algorithm: 'RSA-2048',
+                    generated: currentDate.toISOString()
+                },
+                certificate: {
+                    serial: serialNumber,
+                    issued: currentDate.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    }),
+                    expiry: expiryDate.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    }),
+                    status: 'Active',
+                    publicKeyFingerprint: fingerprint
+                },
+                documents: []
+            };
+
+            const saved = this.saveUsers(users);
+            
+            if (!saved) {
+                return {
+                    success: false,
+                    message: 'Registration failed - storage quota exceeded'
+                };
+            }
+
+            console.log('User registered successfully with cryptographic keys');
+            return {
+                success: true,
+                message: 'Registration successful! Your cryptographic keys have been generated.'
+            };
+            
+        } catch (error) {
+            console.error('Error generating keys during registration:', error);
+            console.error('Error stack:', error.stack);
+            return {
+                success: false,
+                message: 'Registration failed: ' + error.message
+            };
+        }
     }
 
-    // Login user
     login(email, password) {
         const users = this.getAllUsers();
         const user = users[email];
@@ -190,7 +227,6 @@ class AuthManager {
             };
         }
 
-        // Create session
         const session = {
             email: email,
             role: user.role,
@@ -205,7 +241,6 @@ class AuthManager {
             console.error('Error creating session:', error);
         }
 
-        // Log audit event
         this.logAuditEvent('USER_LOGIN', email, 'User logged in successfully');
 
         return {
@@ -215,7 +250,6 @@ class AuthManager {
         };
     }
 
-    // Logout user
     logout() {
         const session = this.getCurrentSession();
         if (session) {
@@ -228,7 +262,6 @@ class AuthManager {
         };
     }
 
-    // Get current session
     getCurrentSession() {
         try {
             const session = localStorage.getItem(this.SESSION_KEY);
@@ -239,12 +272,10 @@ class AuthManager {
         }
     }
 
-    // Check if user is authenticated
     isAuthenticated() {
         return this.getCurrentSession() !== null;
     }
 
-    // Get user details
     getUserDetails(email) {
         const users = this.getAllUsers();
         const user = users[email];
@@ -256,59 +287,53 @@ class AuthManager {
         return user || null;
     }
 
-// In AuthManager class, modify updateUser method
-async updateUser(email, updates) {
-    try {
-        const users = this.getAllUsers();
-        
-        if (!users[email]) {
-            return { success: false, message: 'User not found' };
-        }
-        
-        // If documents are being updated, save them to IndexedDB instead
-        if (updates.documents) {
-            const documents = updates.documents;
-            delete updates.documents; // Remove from localStorage update
+    async updateUser(email, updates) {
+        try {
+            const users = this.getAllUsers();
             
-            // Save each document to IndexedDB
-            for (const doc of documents) {
-                await documentStorage.saveDocument(email, doc);
+            if (!users[email]) {
+                return { success: false, message: 'User not found' };
             }
-        }
-        
-        // Save other user data to localStorage (without documents)
-        users[email] = { ...users[email], ...updates };
-        
-        const saved = this.saveUsers(users);
-        
-        if (!saved) {
+            
+            if (updates.documents) {
+                const documents = updates.documents;
+                delete updates.documents;
+                
+                for (const doc of documents) {
+                    await documentStorage.saveDocument(email, doc);
+                }
+            }
+            
+            users[email] = { ...users[email], ...updates };
+            
+            const saved = this.saveUsers(users);
+            
+            if (!saved) {
+                return { 
+                    success: false, 
+                    message: 'Storage quota exceeded' 
+                };
+            }
+            
+            return { success: true, message: 'User updated successfully' };
+            
+        } catch (error) {
+            console.error('Error in updateUser:', error);
             return { 
                 success: false, 
-                message: 'Storage quota exceeded' 
+                message: 'Error updating user: ' + error.message 
             };
         }
-        
-        return { success: true, message: 'User updated successfully' };
-        
-    } catch (error) {
-        console.error('Error in updateUser:', error);
-        return { 
-            success: false, 
-            message: 'Error updating user: ' + error.message 
-        };
     }
-}
 
-// Add method to get user details with documents from IndexedDB
-async getUserDetailsWithDocs(email) {
-    const user = this.getUserDetails(email);
-    if (user) {
-        user.documents = await documentStorage.getUserDocuments(email);
+    async getUserDetailsWithDocs(email) {
+        const user = this.getUserDetails(email);
+        if (user) {
+            user.documents = await documentStorage.getUserDocuments(email);
+        }
+        return user;
     }
-    return user;
-}
 
-    // Generate random serial number for certificate
     generateSerialNumber() {
         const segments = 8;
         let serial = '';
@@ -320,7 +345,6 @@ async getUserDetailsWithDocs(email) {
         return serial;
     }
 
-    // Audit logging
     logAuditEvent(eventType, user, action, status = 'Success') {
         try {
             const AUDIT_KEY = 'securesign_audit_logs';
@@ -331,13 +355,12 @@ async getUserDetailsWithDocs(email) {
                 eventType: eventType,
                 user: user,
                 action: action,
-                ipAddress: '192.168.1.100', // Simulated IP
+                ipAddress: '192.168.1.100',
                 status: status
             };
 
-            logs.unshift(auditEntry); // Add to beginning
+            logs.unshift(auditEntry);
             
-            // Keep only last 100 logs
             if (logs.length > 100) {
                 logs.splice(100);
             }
@@ -348,7 +371,6 @@ async getUserDetailsWithDocs(email) {
         }
     }
 
-    // Get audit logs
     getAuditLogs(limit = 50) {
         try {
             const AUDIT_KEY = 'securesign_audit_logs';
@@ -360,7 +382,6 @@ async getUserDetailsWithDocs(email) {
         }
     }
 
-    // Get all users (admin only)
     getAllUsersForAdmin() {
         const users = this.getAllUsers();
         const userList = [];
@@ -379,7 +400,6 @@ async getUserDetailsWithDocs(email) {
         return userList;
     }
 
-    // Delete user (admin only)
     deleteUser(email) {
         const users = this.getAllUsers();
         if (users[email]) {
@@ -391,7 +411,6 @@ async getUserDetailsWithDocs(email) {
         return { success: false, message: 'User not found' };
     }
 
-    // Revoke certificate (admin only)
     revokeCertificate(email) {
         const users = this.getAllUsers();
         if (users[email] && users[email].certificate) {
@@ -403,7 +422,6 @@ async getUserDetailsWithDocs(email) {
         return { success: false, message: 'User or certificate not found' };
     }
 
-    // Get system statistics (admin only)
     getSystemStats() {
         const users = this.getAllUsers();
         const userCount = Object.keys(users).length;
