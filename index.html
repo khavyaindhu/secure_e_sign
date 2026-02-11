@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Signature & Document Verification System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+        <div class="container">
+            <div class="auth-box">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h1>SecureSign PKI</h1>
+                </div>
+                <h2>Login to Your Account</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </form>
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="#" id="showRegister">Register here</a></p>
+                </div>
+                
+                <!-- Test Credentials Info Box -->
+                <div class="test-credentials">
+                    <h3>Test Credentials</h3>
+                    <div class="credential-box">
+                        <strong>Admin Account:</strong>
+                        <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6a0b0e0703042a190f091f180f19030d0444090507">[email&#160;protected]</a></p>
+                        <p>Password: admin123</p>
+                    </div>
+                    <div class="credential-box">
+                        <strong>User Account:</strong>
+                        <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="344147514674475157414651475d535a1a575b59">[email&#160;protected]</a></p>
+                        <p>Password: user123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Screen -->
+    <div id="registerScreen" class="screen">
+        <div class="container">
+            <div class="auth-box">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h1>SecureSign PKI</h1>
+                </div>
+                <h2>Create Your Account</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="regFullName">Full Name</label>
+                        <input type="text" id="regFullName" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email Address</label>
+                        <input type="email" id="regEmail" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regOrganization">Organization</label>
+                        <input type="text" id="regOrganization" placeholder="Enter your organization">
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" placeholder="Create a password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regConfirmPassword">Confirm Password</label>
+                        <input type="password" id="regConfirmPassword" placeholder="Confirm your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                </form>
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="#" id="showLogin">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Dashboard -->
+    <div id="userDashboard" class="screen">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>SecureSign PKI</span>
+                </div>
+                <div class="nav-menu">
+                    <span class="user-info">Welcome, <span id="userName">User</span></span>
+                    <button class="btn btn-secondary" id="userLogout">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <ul class="sidebar-menu">
+                    <li class="menu-item active" data-tab="upload">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <span>Upload Document</span>
+                    </li>
+                    <li class="menu-item" data-tab="documents">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>My Documents</span>
+                    </li>
+                    <li class="menu-item" data-tab="verify">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span>Verify Document</span>
+                    </li>
+                    <li class="menu-item" data-tab="certificate">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>My Certificate</span>
+                    </li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+                <!-- Upload Tab -->
+                <div id="uploadTab" class="tab-content active">
+                    <div class="content-header">
+                        <h2>Upload Document for Signing</h2>
+                        <p>Upload a document to digitally sign it using your private key</p>
+                    </div>
+                    
+                    <div class="upload-section">
+                        <div class="upload-area" id="uploadArea">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <h3>Drag & Drop your document here</h3>
+                            <p>or click to browse</p>
+                            <input type="file" id="fileInput" accept=".pdf,.doc,.docx" hidden>
+                            <span class="file-types">Supported: PDF, DOC, DOCX</span>
+                        </div>
+
+                        <div id="filePreview" class="file-preview" style="display: none;">
+                            <div class="file-info">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <div class="file-details">
+                                    <h4 id="fileName">document.pdf</h4>
+                                    <p id="fileSize">2.5 MB</p>
+                                </div>
+                                <button class="btn-icon" id="removeFile">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="sign-options">
+                                <h3>Document Signing Options</h3>
+                                <div class="form-group">
+                                    <label for="signatureReason">Reason for Signing</label>
+                                    <input type="text" id="signatureReason" placeholder="E.g., Approval, Agreement">
+                                </div>
+                                <div class="form-group">
+                                    <label for="signatureLocation">Location</label>
+                                    <input type="text" id="signatureLocation" placeholder="E.g., New York, USA">
+                                </div>
+                                <button class="btn btn-primary" id="signDocument">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                    </svg>
+                                    Sign Document
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documentsTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>My Documents</h2>
+                        <p>View and manage your signed documents</p>
+                    </div>
+
+                    <div class="documents-grid">
+                        <div class="document-card">
+                            <div class="doc-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="doc-info">
+                                <h4>Employment_Contract.pdf</h4>
+                                <p class="doc-meta">Signed on: Jan 15, 2025</p>
+                                <p class="doc-meta">Size: 1.2 MB</p>
+                                <span class="status-badge signed">Signed</span>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="btn btn-sm">Download</button>
+                                <button class="btn btn-sm btn-secondary">View</button>
+                            </div>
+                        </div>
+
+                        <div class="document-card">
+                            <div class="doc-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="doc-info">
+                                <h4>NDA_Agreement.pdf</h4>
+                                <p class="doc-meta">Signed on: Feb 2, 2025</p>
+                                <p class="doc-meta">Size: 845 KB</p>
+                                <span class="status-badge signed">Signed</span>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="btn btn-sm">Download</button>
+                                <button class="btn btn-sm btn-secondary">View</button>
+                            </div>
+                        </div>
+
+                        <div class="document-card">
+                            <div class="doc-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="doc-info">
+                                <h4>Purchase_Order_2025.pdf</h4>
+                                <p class="doc-meta">Uploaded on: Feb 8, 2025</p>
+                                <p class="doc-meta">Size: 2.1 MB</p>
+                                <span class="status-badge pending">Pending Signature</span>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="btn btn-sm btn-primary">Sign Now</button>
+                                <button class="btn btn-sm btn-secondary">View</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verify Tab -->
+                <div id="verifyTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>Verify Document Signature</h2>
+                        <p>Upload a signed document to verify its authenticity and integrity</p>
+                    </div>
+
+                    <div class="verify-section">
+                        <div class="upload-area" id="verifyUploadArea">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            <h3>Upload Signed Document</h3>
+                            <p>Drop document here or click to browse</p>
+                            <input type="file" id="verifyFileInput" accept=".pdf,.doc,.docx" hidden>
+                        </div>
+
+                        <div id="verificationResult" class="verification-result" style="display: none;">
+                            <div class="result-card success">
+                                <div class="result-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <h3>Signature Valid ✓</h3>
+                                <p>This document has a valid digital signature</p>
+                                
+                                <div class="verification-details">
+                                    <div class="detail-item">
+                                        <strong>Signed By:</strong>
+                                        <span>John Doe (<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="503a3f383e7e343f3510333f3d20313e297e333f3d">[email&#160;protected]</a>)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Signed On:</strong>
+                                        <span>February 10, 2025 14:30 UTC</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Certificate Issuer:</strong>
+                                        <span>SecureSign Certificate Authority</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Document Hash (SHA-256):</strong>
+                                        <span class="hash-text">a3f5b8c2d9e1...</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Document Integrity:</strong>
+                                        <span class="status-text success">✓ Not Modified</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Certificate Status:</strong>
+                                        <span class="status-text success">✓ Valid (Not Revoked)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certificate Tab -->
+                <div id="certificateTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>My Digital Certificate</h2>
+                        <p>View and manage your X.509 digital certificate</p>
+                    </div>
+
+                    <div class="certificate-section">
+                        <div class="certificate-card">
+                            <div class="cert-header">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                                <h3>X.509 Digital Certificate</h3>
+                            </div>
+                            
+                            <div class="cert-info">
+                                <div class="info-row">
+                                    <strong>Subject:</strong>
+                                    <span>CN=John Doe, OU=Engineering, O=TechCorp, C=US</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong>Email:</strong>
+                                    <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="483d3b2d3a083b2d2b3d3a2d3b212f26662b2725">[email&#160;protected]</a></span>
+                                </div>
+                                <div class="info-row">
+                                    <strong>Serial Number:</strong>
+                                    <span>4F:3A:B2:C1:D8:E9:12:45</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong>Issued By:</strong>
+                                    <span>SecureSign Certificate Authority</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong>Valid From:</strong>
+                                    <span>January 1, 2025</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong>Valid Until:</strong>
+                                    <span>December 31, 2026</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong>Status:</strong>
+                                    <span class="status-badge valid">Active</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-actions">
+                                <button class="btn btn-primary">Download Certificate</button>
+                                <button class="btn btn-secondary">View Public Key</button>
+                                <button class="btn btn-danger">Revoke Certificate</button>
+                            </div>
+                        </div>
+
+                        <div class="key-info-card">
+                            <h3>Key Pair Information</h3>
+                            <div class="info-row">
+                                <strong>Algorithm:</strong>
+                                <span>RSA 2048-bit</span>
+                            </div>
+                            <div class="info-row">
+                                <strong>Public Key Fingerprint (SHA-256):</strong>
+                                <span class="hash-text">B4:7F:3C:2A:1D...</span>
+                            </div>
+                            <div class="info-row">
+                                <strong>Key Usage:</strong>
+                                <span>Digital Signature, Non-Repudiation</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="screen">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>SecureSign PKI - Admin</span>
+                </div>
+                <div class="nav-menu">
+                    <span class="user-info">Admin: <span id="adminName">Administrator</span></span>
+                    <button class="btn btn-secondary" id="adminLogout">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <ul class="sidebar-menu">
+                    <li class="menu-item active" data-tab="admin-overview">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span>Overview</span>
+                    </li>
+                    <li class="menu-item" data-tab="admin-users">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <span>User Management</span>
+                    </li>
+                    <li class="menu-item" data-tab="admin-certificates">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Certificate Authority</span>
+                    </li>
+                    <li class="menu-item" data-tab="admin-documents">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                        </svg>
+                        <span>All Documents</span>
+                    </li>
+                    <li class="menu-item" data-tab="admin-audit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <span>Audit Logs</span>
+                    </li>
+                </ul>
+            </aside>
+
+            <main class="main-content">
+                <!-- Admin Overview Tab -->
+                <div id="adminOverviewTab" class="tab-content active">
+                    <div class="content-header">
+                        <h2>System Overview</h2>
+                        <p>PKI System Statistics and Health</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Users</h3>
+                                <p class="stat-number">1,247</p>
+                                <span class="stat-change positive">+12% this month</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Issued Certificates</h3>
+                                <p class="stat-number">3,892</p>
+                                <span class="stat-change positive">+8% this month</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon purple">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Documents Signed</h3>
+                                <p class="stat-number">12,456</p>
+                                <span class="stat-change positive">+15% this month</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Pending Approvals</h3>
+                                <p class="stat-number">23</p>
+                                <span class="stat-change">Requires attention</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="activity-section">
+                        <h3>Recent System Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon success">✓</div>
+                                <div class="activity-details">
+                                    <p><strong>New certificate issued</strong> to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5d37323533732e303429351d3e32302d3c3324733e3230">[email&#160;protected]</a></p>
+                                    <span class="activity-time">2 minutes ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon info">i</div>
+                                <div class="activity-details">
+                                    <p><strong>Document signed:</strong> NDA_Agreement.pdf by <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e7868b8e8482c990888980a79382848fc98e88">[email&#160;protected]</a></p>
+                                    <span class="activity-time">15 minutes ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon warning">!</div>
+                                <div class="activity-details">
+                                    <p><strong>Certificate renewal request</strong> from <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="63010c014d090c0d0610230f0604020f4d000c0e">[email&#160;protected]</a></p>
+                                    <span class="activity-time">1 hour ago</span>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon success">✓</div>
+                                <div class="activity-details">
+                                    <p><strong>New user registered:</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c9a4a8bba0a8e7aea8bbaaa0a889babda8bbbdbcb9e7a0a6">[email&#160;protected]</a></p>
+                                    <span class="activity-time">3 hours ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Users Tab -->
+                <div id="adminUsersTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>User Management</h2>
+                        <div class="header-actions">
+                            <input type="text" placeholder="Search users..." class="search-input">
+                            <button class="btn btn-primary">Add New User</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Organization</th>
+                                    <th>Certificate Status</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>John Doe</td>
+                                    <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="562325332416253335232433253f31387835393b">[email&#160;protected]</a></td>
+                                    <td>TechCorp</td>
+                                    <td><span class="status-badge valid">Active</span></td>
+                                    <td>Jan 1, 2025</td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-secondary">Edit</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Alice Wong</td>
+                                    <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5d3c31343e38732a32333a1d29383e35733432">[email&#160;protected]</a></td>
+                                    <td>InnovateLabs</td>
+                                    <td><span class="status-badge valid">Active</span></td>
+                                    <td>Jan 15, 2025</td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-secondary">Edit</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Bob Smith</td>
+                                    <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="583a373a762b35312c3018343d3f3934763b3735">[email&#160;protected]</a></td>
+                                    <td>Legal Associates</td>
+                                    <td><span class="status-badge pending">Pending</span></td>
+                                    <td>Feb 1, 2025</td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-secondary">Edit</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Admin Certificates Tab -->
+                <div id="adminCertificatesTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>Certificate Authority Management</h2>
+                        <button class="btn btn-primary">Issue New Certificate</button>
+                    </div>
+
+                    <div class="ca-stats">
+                        <div class="ca-stat-card">
+                            <h4>Active Certificates</h4>
+                            <p class="ca-number">3,845</p>
+                        </div>
+                        <div class="ca-stat-card">
+                            <h4>Expiring Soon (30 days)</h4>
+                            <p class="ca-number warning">47</p>
+                        </div>
+                        <div class="ca-stat-card">
+                            <h4>Revoked Certificates</h4>
+                            <p class="ca-number">112</p>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Subject</th>
+                                    <th>Issued Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>4F:3A:B2:C1</td>
+                                    <td>CN=John Doe</td>
+                                    <td>Jan 1, 2025</td>
+                                    <td>Dec 31, 2026</td>
+                                    <td><span class="status-badge valid">Valid</span></td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-danger">Revoke</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>8D:1F:5E:A3</td>
+                                    <td>CN=Alice Wong</td>
+                                    <td>Jan 15, 2025</td>
+                                    <td>Jan 15, 2027</td>
+                                    <td><span class="status-badge valid">Valid</span></td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-danger">Revoke</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Admin Documents Tab -->
+                <div id="adminDocumentsTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>All System Documents</h2>
+                        <input type="text" placeholder="Search documents..." class="search-input">
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Document Name</th>
+                                    <th>Owner</th>
+                                    <th>Uploaded</th>
+                                    <th>Size</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Employment_Contract.pdf</td>
+                                    <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="037670667143706660767166706a646d2d606c6e">[email&#160;protected]</a></td>
+                                    <td>Jan 15, 2025</td>
+                                    <td>1.2 MB</td>
+                                    <td><span class="status-badge signed">Signed</span></td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-secondary">Download</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>NDA_Agreement.pdf</td>
+                                    <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="33525f5a50561d445c5d54734756505b1d5a5c">[email&#160;protected]</a></td>
+                                    <td>Feb 2, 2025</td>
+                                    <td>845 KB</td>
+                                    <td><span class="status-badge signed">Signed</span></td>
+                                    <td>
+                                        <button class="btn btn-sm">View</button>
+                                        <button class="btn btn-sm btn-secondary">Download</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Admin Audit Tab -->
+                <div id="adminAuditTab" class="tab-content">
+                    <div class="content-header">
+                        <h2>System Audit Logs</h2>
+                        <div class="header-actions">
+                            <select class="filter-select">
+                                <option>All Events</option>
+                                <option>Login Events</option>
+                                <option>Document Events</option>
+                                <option>Certificate Events</option>
+                            </select>
+                            <input type="date" class="date-input">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Event Type</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>IP Address</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2025-02-11 14:23:15</td>
+                                    <td>CERTIFICATE_ISSUED</td>
+                                    <td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="99f8fdf4f0f7d9eafcfaecebfceaf0fef7b7faf6f4">[email&#160;protected]</a></td>
+                                    <td>Issued certificate to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="452f2a2d2b6b36282c312d05262a2835242b3c6b262a28">[email&#160;protected]</a></td>
+                
