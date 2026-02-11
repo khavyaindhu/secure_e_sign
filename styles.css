@@ -44,6 +44,93 @@ body {
     margin: 0 auto;
     padding: 20px;
 }
+/* Documents Grid */
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+    padding: 20px;
+}
+
+.document-card {
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--border-color, #E5E7EB);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.document-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.doc-icon {
+    width: 48px;
+    height: 48px;
+    background: #EDE9FE;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: #7C3AED;
+}
+
+.doc-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.doc-info h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1F2937;
+}
+
+.doc-meta {
+    font-size: 13px;
+    color: #6B7280;
+    margin-bottom: 4px;
+}
+
+.doc-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
+.status-badge.signed {
+    background: #DBEAFE;
+    color: #1E40AF;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+.status-badge.pending {
+    background: #FEF3C7;
+    color: #92400E;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 8px;
+}
 
 /* Authentication Screens */
 .auth-box {

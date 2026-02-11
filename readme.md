@@ -1,3 +1,6 @@
+command to run the application 
+python3 -m http.server 8000
+
 # E-Signature & Document Verification System - Frontend
 
 ## 📋 Project Overview
@@ -6,7 +9,6 @@ This is a **frontend-only** implementation of a secure e-signature and document 
 
 ---
 
-## 🎯 What's Included in This ZIP File
 
 ### ✅ **Fully Implemented Frontend Features**
 
