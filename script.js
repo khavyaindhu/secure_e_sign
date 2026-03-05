@@ -160,6 +160,19 @@ function initializeEventListeners() {
             handleVerifyDocument(e.dataTransfer.files[0]);
         }
     });
+
+    // Modal close handlers
+document.getElementById('closeUserModal').addEventListener('click', () => {
+    document.getElementById('userModal').style.display = 'none';
+});
+document.getElementById('closeUserModalBtn').addEventListener('click', () => {
+    document.getElementById('userModal').style.display = 'none';
+});
+document.getElementById('userModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget)
+        document.getElementById('userModal').style.display = 'none';
+});
+
 }
 
 // Screen management
@@ -406,6 +419,7 @@ function loadAdminData() {
     loadAdminStats();
     loadAdminUsers();
     loadAdminAuditLogs();
+    loadAdminDocuments();
 }
 
 function loadAdminStats() {
@@ -477,6 +491,125 @@ function loadAdminAuditLogs() {
     });
 }
 
+async function loadAdminDocuments() {
+    const tbody = document.querySelector('#adminDocumentsTab tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    try {
+        const users = authManager.getAllUsersForAdmin();
+
+        for (const user of users) {
+            const docs = await documentStorage.getUserDocuments(user.email);
+
+            if (!docs || docs.length === 0) continue;
+
+            docs.forEach(doc => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${doc.name}</td>
+                    <td>${user.name} (${user.email})</td>
+                    <td>${doc.date}</td>
+                    <td>${doc.size}</td>
+                    <td>
+                        <span class="status-badge ${doc.signed ? 'valid' : 'pending'}">
+                            ${doc.signed ? 'Signed' : 'Unsigned'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm" onclick="adminViewDocument('${doc.id}', '${user.email}')">View</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        if (tbody.children.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">
+                        No documents found in the system
+                    </td>
+                </tr>
+            `;
+        }
+
+    } catch (error) {
+        console.error('Error loading admin documents:', error);
+        showNotification('Error loading documents', 'error');
+    }
+}
+
+async function adminViewDocument(docId, userEmail) {
+    try {
+        const doc = await documentStorage.getDocument(docId);
+        if (!doc) {
+            showNotification('Document not found', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('userModal');
+        const body = document.getElementById('userModalBody');
+
+        // Update modal title
+        modal.querySelector('.modal-header h3').textContent = 'Document Details';
+
+        body.innerHTML = `
+            <div class="info-row">
+                <strong>Document Name</strong>
+                <span>${doc.name}</span>
+            </div>
+            <div class="info-row">
+                <strong>Owner</strong>
+                <span>${userEmail}</span>
+            </div>
+            <div class="info-row">
+                <strong>Size</strong>
+                <span>${doc.size}</span>
+            </div>
+            <div class="info-row">
+                <strong>Date</strong>
+                <span>${doc.date}</span>
+            </div>
+            <div class="info-row">
+                <strong>Status</strong>
+                <span class="status-badge ${doc.signed ? 'valid' : 'pending'}">
+                    ${doc.signed ? 'Signed' : 'Unsigned'}
+                </span>
+            </div>
+            ${doc.signed ? `
+            <div class="info-row">
+                <strong>Signed By</strong>
+                <span>${doc.signedBy}</span>
+            </div>
+            <div class="info-row">
+                <strong>Reason</strong>
+                <span>${doc.signatureReason}</span>
+            </div>
+            <div class="info-row">
+                <strong>Location</strong>
+                <span>${doc.signatureLocation}</span>
+            </div>
+            <div class="info-row">
+                <strong>Algorithm</strong>
+                <span>${doc.cryptoSignature.algorithm}</span>
+            </div>
+            <div class="info-row">
+                <strong>Document Hash</strong>
+                <span class="hash-text">${doc.cryptoSignature.documentHash.substring(0, 32)}...</span>
+            </div>
+            ` : ''}
+        `;
+
+        modal.style.display = 'flex';
+
+    } catch (error) {
+        console.error('Error viewing document:', error);
+        showNotification('Error loading document details', 'error');
+    }
+}
+
 // ==========================================
 // TAB SWITCHING
 // ==========================================
@@ -520,14 +653,15 @@ function switchTab(clickedTab, dashboardType) {
         console.error('Tab not found:', tabId);
     }
 
-    // Reload data when switching to certain tabs
-    if (dashboardType === 'admin') {
-        if (tabName === 'admin-users') {
-            loadAdminUsers();
-        } else if (tabName === 'admin-audit') {
-            loadAdminAuditLogs();
-        }
-    } else if (dashboardType === 'user') {
+   if (dashboardType === 'admin') {
+    if (tabName === 'admin-users') {
+        loadAdminUsers();
+    } else if (tabName === 'admin-audit') {
+        loadAdminAuditLogs();
+    } else if (tabName === 'admin-documents') { // ← ADD THIS
+        loadAdminDocuments();
+    }
+}else if (dashboardType === 'user') {
         if (tabName === 'documents') {
             // Use async version
             loadUserData(); // This will reload documents from IndexedDB
@@ -1013,31 +1147,62 @@ function signDocumentFromList(docId) {
     }
 }
 
-// Admin functions (called from HTML onclick handlers)
 function viewUserDetails(email) {
     const user = authManager.getUserDetails(email);
-    if (user) {
-        const docCount = user.documents ? user.documents.length : 0;
-        alert(`User Details:
-        
-Name: ${user.name}
-Email: ${email}
-Organization: ${user.organization || 'N/A'}
-Role: ${user.role}
-Registered: ${new Date(user.registeredDate).toLocaleDateString()}
+    if (!user) return;
 
-Certificate:
-Serial: ${user.certificate.serial}
-Status: ${user.certificate.status}
-Valid Until: ${user.certificate.expiry}
+    const docCount = user.documents ? user.documents.length : 0;
+    const modal = document.getElementById('userModal');
+    const body = document.getElementById('userModalBody');
 
-Documents: ${docCount} signed document(s)`);
-    }
+    body.innerHTML = `
+        <div class="info-row">
+            <strong>Full Name</strong>
+            <span>${user.name}</span>
+        </div>
+        <div class="info-row">
+            <strong>Email</strong>
+            <span>${email}</span>
+        </div>
+        <div class="info-row">
+            <strong>Organization</strong>
+            <span>${user.organization || 'N/A'}</span>
+        </div>
+        <div class="info-row">
+            <strong>Role</strong>
+            <span>${user.role}</span>
+        </div>
+        <div class="info-row">
+            <strong>Registered</strong>
+            <span>${new Date(user.registeredDate).toLocaleDateString()}</span>
+        </div>
+        <div class="info-row">
+            <strong>Cert Serial</strong>
+            <span class="hash-text">${user.certificate.serial}</span>
+        </div>
+        <div class="info-row">
+            <strong>Cert Status</strong>
+            <span class="status-badge ${user.certificate.status === 'Active' ? 'valid' : 'revoked'}">${user.certificate.status}</span>
+        </div>
+        <div class="info-row">
+            <strong>Valid Until</strong>
+            <span>${user.certificate.expiry}</span>
+        </div>
+        <div class="info-row">
+            <strong>Documents</strong>
+            <span>${docCount} signed document(s)</span>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
 }
 
 function editUser(email) {
     showNotification('Edit user feature - coming soon!', 'info');
 }
+
+
+
 
 // Add animation styles
 const style = document.createElement('style');
